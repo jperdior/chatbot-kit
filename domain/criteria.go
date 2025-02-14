@@ -1,16 +1,16 @@
 package domain
 
 type Criteria interface {
-	GetFilters() []*Filter
-	GetSort() string
-	GetSortDir() string
-	GetPage() int
-	GetPageSize() int
+	Filters() []*Filter
+	Sort() string
+	SortDir() string
+	Page() int
+	PageSize() int
 }
 
 type Filter interface {
-	GetName() string
-	GetType() string
-	GetOperation() string
-	GetValue() interface{}
+	Name() string
+	Type() string
+	Operation() string
+	Value() interface{}
 }
