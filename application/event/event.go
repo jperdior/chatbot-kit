@@ -1,6 +1,7 @@
 package event
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/google/uuid"
 	"time"
@@ -9,7 +10,7 @@ import (
 // Bus defines the expected behaviour from an event bus.
 type Bus interface {
 	// Publish is the method used to publish new events.
-	Publish([]Event) error
+	Publish(context.Context, []Event) error
 	//Subscribe is the method used to subscribe to an event.
 	Subscribe(Type, Handler)
 }
