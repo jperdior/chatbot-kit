@@ -8,15 +8,15 @@ import (
 )
 
 type Base struct {
-	ID        []byte    `gorm:"type:binary(16);primary_key"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        domain.UUIDValueObject `gorm:"type:binary(16);primary_key"`
+	CreatedAt time.Time              `json:"created_at"`
+	UpdatedAt time.Time              `json:"updated_at"`
 }
 
-func NewBase(id domain.UuidValueObject) (*Base, error) {
+func NewBase(id domain.UUIDValueObjectInterface) (*Base, error) {
 	currentTime := time.Now()
 	return &Base{
-		ID:        id.Bytes(),
+		ID:        id.(domain.UUIDValueObject),
 		CreatedAt: currentTime,
 		UpdatedAt: currentTime,
 	}, nil
