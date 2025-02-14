@@ -12,6 +12,10 @@ func NewUserID(value uuid.UUID) *UserID {
 	return &UserID{value: value}
 }
 
+func (u UserID) String() string {
+	return u.value.String()
+}
+
 func (u UserID) Value() uuid.UUID {
 	return u.value
 }
