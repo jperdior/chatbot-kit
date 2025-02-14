@@ -5,7 +5,7 @@ package querymocks
 import (
 	context "context"
 
-	query "github.com/jperdior/recordari-kit/application/query"
+	query "github.com/jperdior/chatbot-kit/application/query"
 	mock "github.com/stretchr/testify/mock"
 )
 

@@ -1,7 +1,7 @@
 package domain
 
 import (
-	"github.com/jperdior/recordari-kit/application/event"
+	"github.com/jperdior/chatbot-kit/application/event"
 	"time"
 )
 

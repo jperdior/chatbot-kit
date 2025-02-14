@@ -5,7 +5,7 @@ package commandmocks
 import (
 	context "context"
 
-	command "github.com/jperdior/recordari-kit/application/command"
+	command "github.com/jperdior/chatbot-kit/application/command"
 
 	mock "github.com/stretchr/testify/mock"
 )

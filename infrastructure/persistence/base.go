@@ -3,7 +3,7 @@ package persistence
 import (
 	"time"
 
-	"github.com/jperdior/recordari-kit/domain"
+	"github.com/jperdior/chatbot-kit/domain"
 	"gorm.io/gorm"
 )
 

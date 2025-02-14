@@ -3,7 +3,7 @@
 package eventmocks
 
 import (
-	event "github.com/jperdior/recordari-kit/application/event"
+	event "github.com/jperdior/chatbot-kit/application/event"
 	mock "github.com/stretchr/testify/mock"
 )
 
