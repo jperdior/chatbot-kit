@@ -7,19 +7,21 @@ import (
 )
 
 // EmailValueObject represents a value object for emails
-type EmailValueObject string
+type EmailValueObject struct {
+	value string
+}
 
-func NewEmailValueObject(value string) (EmailValueObject, error) {
+func NewEmailValueObject(value string) (*EmailValueObject, error) {
 	const emailRegex = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
 	re := regexp.MustCompile(emailRegex)
 	if !re.MatchString(value) {
-		return "", NewDomainError("invalid email", "email.invalid")
+		return nil, NewDomainError("invalid email", "email.invalid")
 	}
-	return EmailValueObject(value), nil
+	return &EmailValueObject{value: value}, nil
 }
 
 func (emailValueObject *EmailValueObject) Value() string {
-	return string(*emailValueObject)
+	return emailValueObject.value
 }
 
 type UUIDValueObjectInterface interface {

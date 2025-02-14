@@ -8,8 +8,8 @@ type UserID struct {
 	value uuid.UUID
 }
 
-func NewUserID(value uuid.UUID) UserID {
-	return UserID{value: value}
+func NewUserID(value uuid.UUID) *UserID {
+	return &UserID{value: value}
 }
 
 func (u UserID) Value() uuid.UUID {
