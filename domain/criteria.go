@@ -16,6 +16,16 @@ type Criteria struct {
 	pageSize int
 }
 
+func NewCriteria(filters []Filter, sort, sortDir string, page, pageSize int) *Criteria {
+	return &Criteria{
+		filters:  filters,
+		sort:     sort,
+		sortDir:  sortDir,
+		page:     page,
+		pageSize: pageSize,
+	}
+}
+
 func (c *Criteria) Filters() []Filter {
 	return c.filters
 }
@@ -46,6 +56,14 @@ type Filter struct {
 	name      string
 	operation string
 	value     interface{}
+}
+
+func NewFilter(name, operation string, value interface{}) *Filter {
+	return &Filter{
+		name:      name,
+		operation: operation,
+		value:     value,
+	}
 }
 
 func (f *Filter) Name() string {
