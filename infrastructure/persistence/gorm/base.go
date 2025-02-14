@@ -22,6 +22,10 @@ func NewBase(id domain.UUIDValueObjectInterface) (*Base, error) {
 	}, nil
 }
 
+type TransactionRepositoryInterface interface {
+	ExecuteTransaction(txFunc func(tx *gorm.DB) error) error
+}
+
 type TransactionRepository struct {
 	db *gorm.DB
 }
