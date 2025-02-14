@@ -5,7 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func ApplyCriteria(query *gorm.DB, criteria domain.Criteria) (*gorm.DB, error) {
+func ApplyCriteria(query *gorm.DB, criteria domain.CriteriaInterface) (*gorm.DB, error) {
 	var value interface{}
 
 	for _, filter := range criteria.Filters() {
