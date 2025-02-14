@@ -39,7 +39,6 @@ type Event interface {
 	AggregateID() string
 	OccurredOn() time.Time
 	Type() Type
-	ToDTO() EventDTO
 }
 
 type BaseEvent struct {
@@ -66,26 +65,4 @@ func (b BaseEvent) OccurredOn() time.Time {
 
 func (b BaseEvent) AggregateID() string {
 	return b.aggregateID
-}
-
-func (b BaseEvent) ToDTO() BaseEventDTO {
-	return BaseEventDTO{
-		EventID:     b.eventID,
-		AggregateID: b.aggregateID,
-		OccurredOn:  b.occurredOn,
-	}
-}
-
-type BaseEventDTO struct {
-	EventID     string    `json:"event_id"`
-	AggregateID string    `json:"aggregate_id"`
-	OccurredOn  time.Time `json:"occurred_on"`
-}
-
-func (b *BaseEventDTO) ToBaseEvent() BaseEvent {
-	return BaseEvent{
-		eventID:     b.EventID,
-		aggregateID: b.AggregateID,
-		occurredOn:  b.OccurredOn,
-	}
 }
