@@ -10,7 +10,6 @@ type Criteria interface {
 
 type Filter interface {
 	Name() string
-	Type() string
 	Operation() string
 	Value() interface{}
 }
