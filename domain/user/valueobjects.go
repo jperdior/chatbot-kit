@@ -5,7 +5,7 @@ import (
 )
 
 type UserID struct {
-	domain.UUIDValueObject
+	*domain.UUIDValueObject
 }
 
 func NewUserID(value string) (UserID, error) {
@@ -13,10 +13,10 @@ func NewUserID(value string) (UserID, error) {
 	if err != nil {
 		return UserID{}, err
 	}
-	return UserID{UUIDValueObject: *uid}, nil
+	return UserID{UUIDValueObject: uid}, nil
 }
 
 func NewRandomUserID() UserID {
 	uid := domain.NewRandomUUIDValueObject()
-	return UserID{UUIDValueObject: *uid}
+	return UserID{UUIDValueObject: uid}
 }
