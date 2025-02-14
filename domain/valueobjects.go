@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"database/sql/driver"
-	"fmt"
 	"regexp"
 
 	"github.com/google/uuid"
@@ -24,60 +22,39 @@ func (emailValueObject *EmailValueObject) Value() string {
 	return string(*emailValueObject)
 }
 
-// UuidValueObject represents a value object for UUIDs
-type UuidValueObject uuid.UUID
+type UUIDValueObjectInterface interface {
+	Value() string
+	RandomUUIDValueObject() UUIDValueObjectInterface
+}
 
-func NewUuidValueObject(value string) (UuidValueObject, error) {
+// UUIDValueObject represents a value object for UUIDs
+type UUIDValueObject uuid.UUID
+
+func (uuidValueObject *UUIDValueObject) Value() string {
+	return uuid.UUID(*uuidValueObject).String()
+}
+
+func (uuidValueObject *UUIDValueObject) RandomUUIDValueObject() UUIDValueObjectInterface {
+	newUUID := UUIDValueObject(uuid.New())
+	return &newUUID
+}
+
+func NewUuidValueObject(value string) (UUIDValueObjectInterface, error) {
 	uid, err := uuid.Parse(value)
 	if err != nil {
-		return UuidValueObject{}, err
+		return &UUIDValueObject{}, err
 	}
-	return UuidValueObject(uid), nil
+	uuidValueObject := UUIDValueObject(uid)
+	return &uuidValueObject, nil
 }
 
-func NewUuidValueObjectFromBytes(value []byte) (UuidValueObject, error) {
+func NewUuidValueObjectFromBytes(value []byte) (UUIDValueObjectInterface, error) {
 	uid, err := uuid.FromBytes(value)
 	if err != nil {
-		return UuidValueObject{}, err
+		return &UUIDValueObject{}, err
 	}
-	return UuidValueObject(uid), nil
-}
-
-func RandomUuidValueObject() UuidValueObject {
-	return UuidValueObject(uuid.New())
-}
-
-func (uidValueObject *UuidValueObject) Scan(value interface{}) error {
-	if value == nil {
-		*uidValueObject = UuidValueObject{} // If value is nil, set it to the zero value
-		return nil
-	}
-
-	bytes, ok := value.([]byte)
-	if !ok {
-		return fmt.Errorf("failed to scan UUID: expected []byte but got %T", value)
-	}
-
-	parsedUUID, err := uuid.FromBytes(bytes)
-	if err != nil {
-		return fmt.Errorf("failed to parse UUID from bytes: %w", err)
-	}
-
-	*uidValueObject = UuidValueObject(parsedUUID)
-	return nil
-}
-
-func (uidValueObject *UuidValueObject) Value() (driver.Value, error) {
-	return uuid.UUID(*uidValueObject).MarshalBinary()
-}
-
-func (uidValueObject *UuidValueObject) String() string {
-	return uuid.UUID(*uidValueObject).String()
-}
-
-func (uidValueObject *UuidValueObject) Bytes() []byte {
-	bytes, _ := uuid.UUID(*uidValueObject).MarshalBinary()
-	return bytes
+	uuidValueObject := UUIDValueObject(uid)
+	return &uuidValueObject, nil
 }
 
 type SortDirValueObject string
