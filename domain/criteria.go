@@ -1,7 +1,7 @@
 package domain
 
 type CriteriaInterface interface {
-	Filters() []Filter
+	Filters() []FilterInterface
 	Sort() string
 	SortDir() string
 	Page() int
