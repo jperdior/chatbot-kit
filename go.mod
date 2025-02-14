@@ -1,4 +1,4 @@
-module github.com/jperdior/recordari-kit
+module github.com/jperdior/chatbot-kit
 
 go 1.23.2
 
