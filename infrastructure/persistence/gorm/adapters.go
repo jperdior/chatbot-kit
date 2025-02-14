@@ -18,7 +18,7 @@ type UUIDAdapter struct {
 
 func (uidAdapter *UUIDAdapter) Scan(value interface{}) error {
 	if value == nil {
-		uidAdapter.ValueObject = &domain.UUIDValueObject{} // If value is nil, set it to the zero value
+		uidAdapter.ValueObject = domain.UUIDValueObject{} // If value is nil, set it to the zero value
 		return nil
 	}
 
@@ -32,7 +32,7 @@ func (uidAdapter *UUIDAdapter) Scan(value interface{}) error {
 		return fmt.Errorf("failed to parse UUID from bytes: %w", err)
 	}
 
-	uidAdapter.ValueObject = (*domain.UUIDValueObject)(&parsedUUID)
+	uidAdapter.ValueObject, _ = domain.NewUuidValueObject(parsedUUID.String())
 	return nil
 }
 
@@ -40,5 +40,5 @@ func (uidAdapter *UUIDAdapter) Value() (driver.Value, error) {
 	if uidAdapter.ValueObject == nil {
 		return nil, nil
 	}
-	return uidAdapter.ValueObject, nil
+	return uidAdapter.ValueObject.Value(), nil
 }

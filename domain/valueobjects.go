@@ -23,38 +23,29 @@ func (emailValueObject *EmailValueObject) Value() string {
 }
 
 type UUIDValueObjectInterface interface {
-	Value() string
-	RandomUUIDValueObject() UUIDValueObjectInterface
+	Value() uuid.UUID
 }
 
 // UUIDValueObject represents a value object for UUIDs
-type UUIDValueObject uuid.UUID
-
-func (uuidValueObject *UUIDValueObject) Value() string {
-	return uuid.UUID(*uuidValueObject).String()
+type UUIDValueObject struct {
+	value uuid.UUID
 }
 
-func (uuidValueObject *UUIDValueObject) RandomUUIDValueObject() UUIDValueObjectInterface {
-	newUUID := UUIDValueObject(uuid.New())
-	return &newUUID
+func (u UUIDValueObject) Value() uuid.UUID {
+	return u.value
 }
 
-func NewUuidValueObject(value string) (UUIDValueObjectInterface, error) {
+func NewRandomUUIDValueObject() *UUIDValueObject {
+	uid := uuid.New()
+	return &UUIDValueObject{value: uid}
+}
+
+func NewUuidValueObject(value string) (*UUIDValueObject, error) {
 	uid, err := uuid.Parse(value)
 	if err != nil {
 		return &UUIDValueObject{}, err
 	}
-	uuidValueObject := UUIDValueObject(uid)
-	return &uuidValueObject, nil
-}
-
-func NewUuidValueObjectFromBytes(value []byte) (UUIDValueObjectInterface, error) {
-	uid, err := uuid.FromBytes(value)
-	if err != nil {
-		return &UUIDValueObject{}, err
-	}
-	uuidValueObject := UUIDValueObject(uid)
-	return &uuidValueObject, nil
+	return &UUIDValueObject{value: uid}, nil
 }
 
 type SortDirValueObject string
