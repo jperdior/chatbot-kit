@@ -26,6 +26,7 @@ func (emailValueObject *EmailValueObject) Value() string {
 
 type UUIDValueObjectInterface interface {
 	Value() uuid.UUID
+	String() string
 }
 
 // UUIDValueObject represents a value object for UUIDs
@@ -35,6 +36,10 @@ type UUIDValueObject struct {
 
 func (u UUIDValueObject) Value() uuid.UUID {
 	return u.value
+}
+
+func (u UUIDValueObject) String() string {
+	return u.value.String()
 }
 
 func NewRandomUUIDValueObject() *UUIDValueObject {
