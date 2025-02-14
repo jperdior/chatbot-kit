@@ -1,25 +1,22 @@
 package domain
 
 import (
-	"github.com/google/uuid"
+	"github.com/jperdior/chatbot-kit/domain"
 )
 
 type UserID struct {
-	value uuid.UUID
+	domain.UUIDValueObject
 }
 
-func NewUserID(value uuid.UUID) *UserID {
-	return &UserID{value: value}
-}
-
-func (u UserID) String() string {
-	return u.value.String()
-}
-
-func (u UserID) Value() uuid.UUID {
-	return u.value
+func NewUserID(value string) (UserID, error) {
+	uid, err := domain.NewUuidValueObject(value)
+	if err != nil {
+		return UserID{}, err
+	}
+	return UserID{UUIDValueObject: *uid}, nil
 }
 
 func NewRandomUserID() UserID {
-	return UserID{value: uuid.New()}
+	uid := domain.NewRandomUUIDValueObject()
+	return UserID{UUIDValueObject: *uid}
 }
