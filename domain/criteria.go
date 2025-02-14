@@ -9,14 +9,14 @@ type CriteriaInterface interface {
 }
 
 type Criteria struct {
-	filters  []Filter
+	filters  []FilterInterface
 	sort     string
 	sortDir  string
 	page     int
 	pageSize int
 }
 
-func NewCriteria(filters []Filter, sort, sortDir string, page, pageSize int) *Criteria {
+func NewCriteria(filters []FilterInterface, sort, sortDir string, page, pageSize int) *Criteria {
 	return &Criteria{
 		filters:  filters,
 		sort:     sort,
@@ -26,7 +26,7 @@ func NewCriteria(filters []Filter, sort, sortDir string, page, pageSize int) *Cr
 	}
 }
 
-func (c *Criteria) Filters() []Filter {
+func (c *Criteria) Filters() []FilterInterface {
 	return c.filters
 }
 
