@@ -42,3 +42,7 @@ func (uidAdapter *UUIDAdapter) Value() (driver.Value, error) {
 	}
 	return uidAdapter.ValueObject.Value(), nil
 }
+
+func (uidAdapter UUIDAdapter) GormDataType() string {
+	return "uuid"
+}
