@@ -36,7 +36,7 @@ func (uidAdapter *UUIDAdapter) Scan(value interface{}) error {
 	return nil
 }
 
-func (uidAdapter *UUIDAdapter) Value() (driver.Value, error) {
+func (uidAdapter UUIDAdapter) Value() (driver.Value, error) {
 	if uidAdapter.ValueObject == nil {
 		return nil, nil
 	}
