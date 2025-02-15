@@ -40,7 +40,7 @@ func (uidAdapter UUIDAdapter) Value() (driver.Value, error) {
 	if uidAdapter.ValueObject == nil {
 		return nil, nil
 	}
-	return uidAdapter.ValueObject.Value(), nil
+	return uidAdapter.ValueObject.Value().MarshalBinary(), nil
 }
 
 func (uidAdapter *UUIDAdapter) GormDataType() string {
