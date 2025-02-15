@@ -1,14 +1,17 @@
 package gorm
 
 import (
+	"database/sql/driver"
 	"github.com/jperdior/chatbot-kit/domain"
 	"gorm.io/gorm"
 )
 
 func ApplyCriteria(query *gorm.DB, criteria domain.CriteriaInterface) (*gorm.DB, error) {
-	var value interface{}
-
 	for _, filter := range criteria.Filters() {
+		value, err := filter.Value().(driver.Valuer).Value()
+		if err != nil {
+			return nil, err
+		}
 		query = query.Where(filter.Name()+" "+filter.Operation()+" ?", value)
 	}
 
