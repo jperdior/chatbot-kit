@@ -40,7 +40,11 @@ func (uidAdapter UUIDAdapter) Value() (driver.Value, error) {
 	if uidAdapter.ValueObject == nil {
 		return nil, nil
 	}
-	return uidAdapter.ValueObject.Value().MarshalBinary(), nil
+	bytes, err := uidAdapter.ValueObject.Value().MarshalBinary()
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal UUID to bytes: %w", err)
+	}
+	return bytes, nil
 }
 
 func (uidAdapter *UUIDAdapter) GormDataType() string {
