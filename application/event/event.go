@@ -25,9 +25,6 @@ type Handler interface {
 // Type represents a domain event type.
 type Type string
 
-// EventDTO represents a data transfer object for an event.
-type EventDTO interface{}
-
 // EventEnvelope represents an envelope for an event.
 type EventEnvelope struct {
 	EventType Type            `json:"type"` // The type of the event

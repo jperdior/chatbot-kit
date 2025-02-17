@@ -1,0 +1,8 @@
+output: domain/mocks
+dir: domain
+recursive: true
+case: underscore
+with-expecter: true
+exported: true
+testonly: true
+
