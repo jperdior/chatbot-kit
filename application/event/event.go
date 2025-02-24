@@ -13,7 +13,7 @@ type Bus interface {
 	Publish(context.Context, []Event) error
 	//Subscribe is the method used to subscribe to an event.
 	Subscribe(Type, Handler)
-	BindQueue(string, string) error
+	BindQueue(queue, routingKey string) error
 	Consume() error
 	Close()
 }
