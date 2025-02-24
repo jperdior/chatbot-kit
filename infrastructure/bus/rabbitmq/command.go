@@ -9,41 +9,30 @@ import (
 )
 
 type CommandBus struct {
-	publishConn    *amqp.Connection
-	consumeConn    *amqp.Connection
-	pubChannel     *amqp.Channel
-	consumeChannel *amqp.Channel
-	exchange       string
-	queue          string
-	handlers       map[command.Type][]command.Handler
+	conn     *amqp.Connection
+	channel  *amqp.Channel
+	exchange string
+	queue    string
+	handlers map[command.Type][]command.Handler
 }
 
-// NewCommandBus initializes a new RabbitMQ-based EventBus.
+// NewCommandBus initializes a new RabbitMQ-based CommandBus.
 func NewCommandBus(amqpURL, exchange, queue string) (*CommandBus, error) {
-	publishConn, err := amqp.Dial(amqpURL)
+	conn, err := amqp.Dial(amqpURL)
 	if err != nil {
 		return nil, err
 	}
 
-	consumeConn, err := amqp.Dial(amqpURL)
+	ch, err := conn.Channel()
 	if err != nil {
+		_ = conn.Close()
 		return nil, err
 	}
 
-	pubCh, err := publishConn.Channel()
-	if err != nil {
-		return nil, err
-	}
-
-	consumeCh, err := consumeConn.Channel()
-	if err != nil {
-		return nil, err
-	}
-
-	// Declare exchange
-	err = pubCh.ExchangeDeclare(
+	// Declare exchange (only relevant for publishing)
+	err = ch.ExchangeDeclare(
 		exchange,
-		"fanout",
+		"direct",
 		true,  // Durable
 		false, // Auto-delete
 		false, // Internal
@@ -51,39 +40,20 @@ func NewCommandBus(amqpURL, exchange, queue string) (*CommandBus, error) {
 		nil,
 	)
 	if err != nil {
-		return nil, err
-	}
-
-	// Declare queue
-	_, err = consumeCh.QueueDeclare(
-		queue,
-		true,  // Durable
-		false, // Auto-delete
-		false, // Exclusive
-		false, // No-wait
-		nil,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// Bind queue to exchange
-	if err = consumeCh.QueueBind(queue, "", exchange, false, nil); err != nil {
+		_ = conn.Close()
 		return nil, err
 	}
 
 	return &CommandBus{
-		publishConn:    publishConn,
-		consumeConn:    consumeConn,
-		pubChannel:     pubCh,
-		consumeChannel: consumeCh,
-		exchange:       exchange,
-		queue:          queue,
-		handlers:       make(map[command.Type][]command.Handler),
+		conn:     conn,
+		channel:  ch,
+		exchange: exchange,
+		queue:    queue,
+		handlers: make(map[command.Type][]command.Handler),
 	}, nil
 }
 
-// Publish sends command to the bus.
+// Publish sends a command to the bus.
 func (b *CommandBus) Publish(ctx context.Context, cmd command.Command) error {
 	data, err := json.Marshal(cmd)
 	if err != nil {
@@ -95,20 +65,33 @@ func (b *CommandBus) Publish(ctx context.Context, cmd command.Command) error {
 		Body:        data,
 	}
 
-	if err := b.pubChannel.Publish(b.exchange, "", false, false, msg); err != nil {
-		return err
-	}
-	return nil
+	return b.channel.Publish(b.exchange, b.queue, false, false, msg)
 }
 
-// Subscribe registers an event handler.
+// Subscribe registers a command handler.
 func (b *CommandBus) Subscribe(cmdType command.Type, handler command.Handler) {
 	b.handlers[cmdType] = append(b.handlers[cmdType], handler)
 }
 
 // Consume listens for messages from the queue and dispatches them.
 func (b *CommandBus) Consume() error {
-	msgs, err := b.consumeChannel.Consume(
+	_, err := b.channel.QueueDeclare(
+		b.queue,
+		true,  // Durable
+		false, // Auto-delete
+		false, // Exclusive
+		false, // No-wait
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := b.channel.QueueBind(b.queue, b.queue, b.exchange, false, nil); err != nil {
+		return err
+	}
+
+	msgs, err := b.channel.Consume(
 		b.queue,
 		"",    // Consumer name
 		false, // Auto-ack (false for manual ack)
@@ -124,34 +107,27 @@ func (b *CommandBus) Consume() error {
 	for msg := range msgs {
 		var cmd command.Command
 		if err := json.Unmarshal(msg.Body, &cmd); err != nil {
-			log.Printf("Failed to decode event: %v", err)
-			_ = msg.Nack(false, false) // Reject the message without requeueing
+			log.Printf("Failed to decode command: %v", err)
+			_ = msg.Nack(false, false) // Reject without requeueing
 			continue
 		}
 
 		handlers, ok := b.handlers[cmd.Type()]
 		if !ok {
-			log.Printf("No handlers for event type: %s", cmd.Type())
-			_ = msg.Nack(false, false) // Reject the message without requeueing
+			log.Printf("No handlers for command type: %s", cmd.Type())
+			_ = msg.Nack(false, false)
 			continue
 		}
 
-		// Process handlers synchronously (one at a time)
 		for _, handler := range handlers {
-			err := handler.Handle(context.Background(), cmd)
-			if err != nil {
-				log.Printf("Error handling event %s: %v", cmd.Type(), err)
-				_ = msg.Nack(false, true) // Requeue the message on failure
+			if err := handler.Handle(context.Background(), cmd); err != nil {
+				log.Printf("Error handling command %s: %v", cmd.Type(), err)
+				_ = msg.Nack(false, true) // Requeue on failure
 				continue
 			}
 		}
 
-		// Acknowledge the message after processing all handlers
-		err = msg.Ack(false)
-		if err != nil {
-			log.Printf("Failed to acknowledge message: %v", err)
-			return err
-		}
+		_ = msg.Ack(false) // Acknowledge message
 	}
 
 	return nil
@@ -159,16 +135,10 @@ func (b *CommandBus) Consume() error {
 
 // Close cleans up connections and channels.
 func (b *CommandBus) Close() {
-	if b.pubChannel != nil {
-		_ = b.pubChannel.Close()
+	if b.channel != nil {
+		_ = b.channel.Close()
 	}
-	if b.consumeChannel != nil {
-		_ = b.consumeChannel.Close()
-	}
-	if b.publishConn != nil {
-		_ = b.publishConn.Close()
-	}
-	if b.consumeConn != nil {
-		_ = b.consumeConn.Close()
+	if b.conn != nil {
+		_ = b.conn.Close()
 	}
 }
