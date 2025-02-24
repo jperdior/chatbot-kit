@@ -53,8 +53,8 @@ func NewCommandBus(amqpURL, exchange, queue string) (*CommandBus, error) {
 	}, nil
 }
 
-// Publish sends a command to the bus.
-func (b *CommandBus) Publish(ctx context.Context, cmd command.Command) error {
+// Dispatch sends a command to the bus.
+func (b *CommandBus) Dispatch(ctx context.Context, cmd command.Command) error {
 	data, err := json.Marshal(cmd)
 	if err != nil {
 		return err
@@ -68,8 +68,8 @@ func (b *CommandBus) Publish(ctx context.Context, cmd command.Command) error {
 	return b.channel.Publish(b.exchange, b.queue, false, false, msg)
 }
 
-// Subscribe registers a command handler.
-func (b *CommandBus) Subscribe(cmdType command.Type, handler command.Handler) {
+// Register registers a command handler.
+func (b *CommandBus) Register(cmdType command.Type, handler command.Handler) {
 	b.handlers[cmdType] = append(b.handlers[cmdType], handler)
 }
 
