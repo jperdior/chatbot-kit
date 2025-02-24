@@ -102,52 +102,56 @@ func (b *EventBus) BindQueue(queue, routingKey string) error {
 }
 
 // Consume listens for messages from the queue and dispatches them.
+// Consume listens for messages from the queue and dispatches them.
 func (b *EventBus) Consume() error {
 	for _, queue := range b.queues { // Iterate over all bound queues
-		msgs, err := b.channel.Consume(
-			queue,
-			"",    // Consumer name
-			false, // Auto-ack (false for manual ack)
-			false, // Exclusive
-			false, // No-local
-			false, // No-wait
-			nil,
-		)
-		if err != nil {
-			return err
-		}
-
-		for msg := range msgs { // Blocking loop, processes messages one by one
-			var evt event.Event
-			if err := json.Unmarshal(msg.Body, &evt); err != nil {
-				log.Printf("Failed to decode event: %v", err)
-				_ = msg.Nack(false, false) // Reject the message without requeueing
-				continue
+		go func(queue string) { // Start a goroutine for each queue
+			msgs, err := b.channel.Consume(
+				queue,
+				"",    // Consumer name
+				false, // Auto-ack (false for manual ack)
+				false, // Exclusive
+				false, // No-local
+				false, // No-wait
+				nil,
+			)
+			if err != nil {
+				log.Printf("Failed to start consuming from queue %s: %v", queue, err)
+				return
 			}
 
-			handlers, ok := b.handlers[evt.Type()]
-			if !ok {
-				log.Printf("No handlers for event type: %s", evt.Type())
-				_ = msg.Nack(false, false) // Reject the message without requeueing
-				continue
-			}
-
-			// Process handlers synchronously (one at a time)
-			for _, handler := range handlers {
-				err := handler.Handle(context.Background(), evt)
-				if err != nil {
-					log.Printf("Error handling event %s: %v", evt.Type(), err)
-					_ = msg.Nack(false, true) // Requeue the message on failure
+			for msg := range msgs { // Blocking loop, processes messages one by one
+				var evt event.Event
+				if err := json.Unmarshal(msg.Body, &evt); err != nil {
+					log.Printf("Failed to decode event: %v", err)
+					_ = msg.Nack(false, false) // Reject the message without requeueing
 					continue
 				}
-			}
 
-			// Acknowledge the message after processing all handlers
-			err = msg.Ack(false)
-			if err != nil {
-				log.Printf("Failed to acknowledge message: %v", err)
+				handlers, ok := b.handlers[evt.Type()]
+				if !ok {
+					log.Printf("No handlers for event type: %s", evt.Type())
+					_ = msg.Nack(false, false) // Reject the message without requeueing
+					continue
+				}
+
+				// Process handlers synchronously (one at a time)
+				for _, handler := range handlers {
+					err := handler.Handle(context.Background(), evt)
+					if err != nil {
+						log.Printf("Error handling event %s: %v", evt.Type(), err)
+						_ = msg.Nack(false, true) // Requeue the message on failure
+						continue
+					}
+				}
+
+				// Acknowledge the message after processing all handlers
+				err = msg.Ack(false)
+				if err != nil {
+					log.Printf("Failed to acknowledge message: %v", err)
+				}
 			}
-		}
+		}(queue)
 	}
 
 	return nil
