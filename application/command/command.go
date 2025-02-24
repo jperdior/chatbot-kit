@@ -8,6 +8,10 @@ type Bus interface {
 	Dispatch(context.Context, Command) error
 	// Register is the method used to register a new command handler.
 	Register(Type, Handler)
+	// Consume is the method used to listen for new commands.
+	Consume() error
+	// Close is the method used to close the bus.
+	Close()
 }
 
 //go:generate mockery --case=snake --outpkg=commandmocks --output=commandmocks --name=Bus

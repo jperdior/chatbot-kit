@@ -41,3 +41,13 @@ func (b *CommandBus) Dispatch(ctx context.Context, cmd command.Command) error {
 func (b *CommandBus) Register(cmdType command.Type, handler command.Handler) {
 	b.handlers[cmdType] = handler
 }
+
+// Consume does not apply in in-memory implementation
+func (b *CommandBus) Consume() error {
+	return nil
+}
+
+// Close does not apply in in-memory implementation
+func (b *CommandBus) Close() {
+	// noop
+}

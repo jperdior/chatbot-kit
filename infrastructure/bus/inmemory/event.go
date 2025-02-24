@@ -49,3 +49,19 @@ func (b *EventBus) Subscribe(evtType event.Type, handler event.Handler) {
 
 	subscribersForType = append(subscribersForType, handler)
 }
+
+// BindQueue does not apply in inmemory implementation
+func (b *EventBus) BindQueue(queue string, evtType event.Type) {
+	// noop
+}
+
+// Consume does not apply in inmemory implementation
+func (b *EventBus) Consume(ctx context.Context) error {
+	// noop
+	return nil
+}
+
+// Close does not apply in inmemory implementation
+func (b *EventBus) Close() {
+	// noop
+}

@@ -79,6 +79,7 @@ func (b *EventBus) Subscribe(evtType event.Type, handler event.Handler) {
 	b.handlers[evtType] = append(b.handlers[evtType], handler)
 }
 
+// BindQueue binds a queue to the exchange with a routing key.
 func (b *EventBus) BindQueue(queue, routingKey string) error {
 	_, err := b.channel.QueueDeclare(
 		queue,
