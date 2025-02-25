@@ -14,7 +14,7 @@ type Bus interface {
 	//Subscribe is the method used to subscribe to an event.
 	Subscribe(Type, Handler)
 	BindQueue(queue, routingKey string) error
-	Consume() error
+	Consume(queue string) error
 	Close()
 }
 
