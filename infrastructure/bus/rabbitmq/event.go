@@ -57,6 +57,7 @@ func NewEventBus(amqpURL, exchange string) (*EventBus, error) {
 
 // Publish sends events to RabbitMQ.
 func (b *EventBus) Publish(ctx context.Context, events []event.Event) error {
+	log.Printf("Publishing %d events\n", len(events))
 	if b.channel == nil {
 		return errors.New("RabbitMQ channel is not open")
 	}
@@ -121,7 +122,7 @@ func (b *EventBus) BindQueue(queue, routingKey string) error {
 }
 
 // Consume listens for messages from the specified queue and dispatches them.
-func (b *EventBus) Consume(queue string, eventFactory func(event.Type, json.RawMessage) (event.Event, error)) error {
+func (b *EventBus) Consume(queue string) error {
 	msgs, err := b.channel.Consume(
 		queue,
 		"",    // Consumer name
@@ -145,16 +146,16 @@ func (b *EventBus) Consume(queue string, eventFactory func(event.Type, json.RawM
 		}
 
 		// Convert RawMessage to the actual event
-		evt, err := eventFactory(envelope.EventType, envelope.Data)
-		if err != nil {
+		var evt event.Event
+		if err := json.Unmarshal(envelope.Data, &evt); err != nil {
 			log.Printf("Failed to deserialize event of type %s: %v", envelope.EventType, err)
 			_ = msg.Nack(false, false) // Reject the message without requeueing
 			continue
 		}
 
-		handlers, ok := b.handlers[evt.Type()]
+		handlers, ok := b.handlers[envelope.EventType]
 		if !ok {
-			log.Printf("No handlers for event type %s in queue %s", evt.Type(), queue)
+			log.Printf("No handlers for event type %s in queue %s", envelope.EventType, queue)
 			_ = msg.Nack(false, false) // Reject the message without requeueing
 			continue
 		}
@@ -163,7 +164,7 @@ func (b *EventBus) Consume(queue string, eventFactory func(event.Type, json.RawM
 		for _, handler := range handlers {
 			err := handler.Handle(context.Background(), evt)
 			if err != nil {
-				log.Printf("Error handling event %s from queue %s: %v", evt.Type(), queue, err)
+				log.Printf("Error handling event %s from queue %s: %v", envelope.EventType, queue, err)
 				_ = msg.Nack(false, true) // Requeue the message on failure
 				continue
 			}
