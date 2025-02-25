@@ -41,8 +41,10 @@ func NewEventBus(amqpURL, exchange string) (*EventBus, error) {
 		nil,
 	)
 	if err != nil {
+		log.Printf("Failed to declare exchange: %v", err)
 		return nil, err
 	}
+	log.Printf("Exchange %s declared", exchange)
 
 	return &EventBus{
 		conn:     conn,
