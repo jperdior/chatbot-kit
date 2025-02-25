@@ -3,6 +3,8 @@ package rabbitmq
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 
 	"github.com/jperdior/chatbot-kit/application/event"
@@ -56,7 +58,14 @@ func NewEventBus(amqpURL, exchange string) (*EventBus, error) {
 
 // Publish sends events to RabbitMQ.
 func (b *EventBus) Publish(ctx context.Context, events []event.Event) error {
+	if b.channel == nil {
+		return errors.New("RabbitMQ channel is not open")
+	}
+	if b.conn == nil || b.conn.IsClosed() {
+		return errors.New("RabbitMQ connection is not open")
+	}
 	for _, evt := range events {
+		fmt.Printf("Event: %+v\n", evt)
 		marshalledEvent, err := json.Marshal(evt)
 		if err != nil {
 			return err
