@@ -57,7 +57,16 @@ func NewEventBus(amqpURL, exchange string) (*EventBus, error) {
 // Publish sends events to RabbitMQ.
 func (b *EventBus) Publish(ctx context.Context, events []event.Event) error {
 	for _, evt := range events {
-		data, err := json.Marshal(evt)
+		marshalledEvent, err := json.Marshal(evt)
+		if err != nil {
+			return err
+		}
+		envelope := event.EventEnvelope{
+			EventType: evt.Type(),
+			Data:      marshalledEvent,
+		}
+
+		data, err := json.Marshal(envelope)
 		if err != nil {
 			return err
 		}
@@ -104,7 +113,7 @@ func (b *EventBus) BindQueue(queue, routingKey string) error {
 }
 
 // Consume listens for messages from the specified queue and dispatches them.
-func (b *EventBus) Consume(queue string) error {
+func (b *EventBus) Consume(queue string, eventFactory func(event.Type, json.RawMessage) (event.Event, error)) error {
 	msgs, err := b.channel.Consume(
 		queue,
 		"",    // Consumer name
@@ -120,9 +129,17 @@ func (b *EventBus) Consume(queue string) error {
 	}
 
 	for msg := range msgs { // Blocking loop, processes messages one by one
-		var evt event.Event
-		if err := json.Unmarshal(msg.Body, &evt); err != nil {
-			log.Printf("Failed to decode event from queue %s: %v", queue, err)
+		var envelope event.EventEnvelope
+		if err := json.Unmarshal(msg.Body, &envelope); err != nil {
+			log.Printf("Failed to decode event envelope from queue %s: %v", queue, err)
+			_ = msg.Nack(false, false) // Reject the message without requeueing
+			continue
+		}
+
+		// Convert RawMessage to the actual event
+		evt, err := eventFactory(envelope.EventType, envelope.Data)
+		if err != nil {
+			log.Printf("Failed to deserialize event of type %s: %v", envelope.EventType, err)
 			_ = msg.Nack(false, false) // Reject the message without requeueing
 			continue
 		}

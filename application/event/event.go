@@ -37,33 +37,33 @@ type EventEnvelope struct {
 // Event represents a domain event.
 type Event interface {
 	ID() string
-	AggregateID() string
-	OccurredOn() time.Time
+	GetAggregateID() string
+	GetOccurredOn() time.Time
 	Type() Type
 }
 
 type BaseEvent struct {
-	eventID     string
-	aggregateID string
-	occurredOn  time.Time
+	EventID     string
+	AggregateID string
+	OccurredOn  time.Time
 }
 
 func NewBaseEvent(aggregateID string) BaseEvent {
 	return BaseEvent{
-		eventID:     uuid.New().String(),
-		aggregateID: aggregateID,
-		occurredOn:  time.Now(),
+		EventID:     uuid.New().String(),
+		AggregateID: aggregateID,
+		OccurredOn:  time.Now(),
 	}
 }
 
 func (b BaseEvent) ID() string {
-	return b.eventID
+	return b.EventID
 }
 
-func (b BaseEvent) OccurredOn() time.Time {
-	return b.occurredOn
+func (b BaseEvent) GetOccurredOn() time.Time {
+	return b.OccurredOn
 }
 
-func (b BaseEvent) AggregateID() string {
-	return b.aggregateID
+func (b BaseEvent) GetAggregateID() string {
+	return b.AggregateID
 }
