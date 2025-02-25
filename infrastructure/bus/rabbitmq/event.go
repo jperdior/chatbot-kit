@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/jperdior/chatbot-kit/application/event"
@@ -65,7 +64,7 @@ func (b *EventBus) Publish(ctx context.Context, events []event.Event) error {
 		return errors.New("RabbitMQ connection is not open")
 	}
 	for _, evt := range events {
-		fmt.Printf("Event: %+v\n", evt)
+		log.Printf("Event: %+v\n", evt)
 		marshalledEvent, err := json.Marshal(evt)
 		if err != nil {
 			return err
@@ -74,7 +73,7 @@ func (b *EventBus) Publish(ctx context.Context, events []event.Event) error {
 			EventType: evt.Type(),
 			Data:      marshalledEvent,
 		}
-
+		log.Printf("Envelope: %+v\n", envelope)
 		data, err := json.Marshal(envelope)
 		if err != nil {
 			return err
