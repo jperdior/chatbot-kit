@@ -43,9 +43,9 @@ type Event interface {
 }
 
 type BaseEvent struct {
-	EventID     string
-	AggregateID string
-	OccurredOn  time.Time
+	EventID     string    `json:"id"`
+	AggregateID string    `json:"aggregate_id"`
+	OccurredOn  time.Time `json:"occurred_on"`
 }
 
 func NewBaseEvent(aggregateID string) BaseEvent {
