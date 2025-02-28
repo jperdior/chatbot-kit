@@ -7,7 +7,7 @@ import (
 const UserRegisteredType event.Type = "user_registered"
 
 type UserRegisteredEvent struct {
-	event.BaseEvent
+	*event.BaseEvent
 	email string
 	roles []string
 }
