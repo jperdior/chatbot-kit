@@ -56,7 +56,7 @@ func (b *EventBus) BindQueue(queue string, evtType event.Type) {
 }
 
 // Consume does not apply in inmemory implementation
-func (b *EventBus) Consume(ctx context.Context) error {
+func (b *EventBus) Consume(queue string) error {
 	// noop
 	return nil
 }

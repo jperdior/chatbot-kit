@@ -6,6 +6,7 @@ import (
 	"github.com/jperdior/chatbot-kit/application/command"
 	"github.com/streadway/amqp"
 	"log"
+	"reflect"
 )
 
 type CommandBus struct {
@@ -14,6 +15,12 @@ type CommandBus struct {
 	exchange string
 	queue    string
 	handlers map[command.Type][]command.Handler
+	types    map[command.Type]reflect.Type
+}
+
+// RegisterCommandType at startup
+func (b *CommandBus) RegisterCommandType(commandType command.Type, commandStruct interface{}) {
+	b.types[commandType] = reflect.TypeOf(commandStruct)
 }
 
 // NewCommandBus initializes a new RabbitMQ-based CommandBus.
@@ -50,12 +57,25 @@ func NewCommandBus(amqpURL, exchange, queue string) (*CommandBus, error) {
 		exchange: exchange,
 		queue:    queue,
 		handlers: make(map[command.Type][]command.Handler),
+		types:    make(map[command.Type]reflect.Type),
 	}, nil
 }
 
 // Dispatch sends a command to the bus.
 func (b *CommandBus) Dispatch(ctx context.Context, cmd command.Command) error {
-	data, err := json.Marshal(cmd)
+	log.Printf("Dispatching command: %s", cmd.Type())
+	marshalledCommand, err := json.Marshal(cmd)
+	if err != nil {
+		log.Printf("Failed to marshal command: %v", err)
+		return err
+	}
+
+	envelope := command.CommandEnvelope{
+		CommandType: cmd.Type(),
+		Data:        marshalledCommand,
+	}
+
+	data, err := json.Marshal(envelope)
 	if err != nil {
 		return err
 	}
@@ -65,7 +85,14 @@ func (b *CommandBus) Dispatch(ctx context.Context, cmd command.Command) error {
 		Body:        data,
 	}
 
-	return b.channel.Publish(b.exchange, b.queue, false, false, msg)
+	err = b.channel.Publish(b.exchange, b.queue, false, false, msg)
+	if err != nil {
+		log.Printf("Failed to publish command: %v", err)
+		return err
+	}
+
+	log.Printf("Command dispatched: %s", cmd.Type())
+	return nil
 }
 
 // Register registers a command handler.
@@ -75,6 +102,7 @@ func (b *CommandBus) Register(cmdType command.Type, handler command.Handler) {
 
 // Consume listens for messages from the queue and dispatches them.
 func (b *CommandBus) Consume() error {
+	log.Printf("Starting to consume from queue: %s", b.queue)
 	_, err := b.channel.QueueDeclare(
 		b.queue,
 		true,  // Durable
@@ -84,10 +112,12 @@ func (b *CommandBus) Consume() error {
 		nil,
 	)
 	if err != nil {
+		log.Printf("Failed to declare queue: %v", err)
 		return err
 	}
 
 	if err := b.channel.QueueBind(b.queue, b.queue, b.exchange, false, nil); err != nil {
+		log.Printf("Failed to bind queue: %v", err)
 		return err
 	}
 
@@ -101,18 +131,41 @@ func (b *CommandBus) Consume() error {
 		nil,
 	)
 	if err != nil {
+		log.Printf("Failed to start consuming: %v", err)
 		return err
 	}
 
 	for msg := range msgs {
-		var cmd command.Command
-		if err := json.Unmarshal(msg.Body, &cmd); err != nil {
-			log.Printf("Failed to decode command: %v", err)
-			_ = msg.Nack(false, false) // Reject without requeueing
+		log.Printf("Received message: %s", msg.Body)
+		var envelope command.CommandEnvelope
+		if err := json.Unmarshal(msg.Body, &envelope); err != nil {
+			log.Printf("Failed to decode event envelope from queue %s: %v", b.queue, err)
+			_ = msg.Nack(false, false) // Reject the message without requeueing
+			continue
+		}
+		commandType, found := b.types[envelope.CommandType]
+		if !found {
+			log.Printf("Unknown event type: %s", envelope.CommandType)
+			_ = msg.Nack(false, false)
+			continue
+		}
+
+		commandValue := reflect.New(commandType).Interface()
+		if err := json.Unmarshal(envelope.Data, commandValue); err != nil {
+			log.Printf("Failed to deserialize event: %v", err)
+			_ = msg.Nack(false, false)
+			continue
+		}
+
+		cmd, ok := commandValue.(command.Command)
+		if !ok {
+			log.Printf("Invalid event type: %T", commandValue)
+			_ = msg.Nack(false, false)
 			continue
 		}
 
 		handlers, ok := b.handlers[cmd.Type()]
+
 		if !ok {
 			log.Printf("No handlers for command type: %s", cmd.Type())
 			_ = msg.Nack(false, false)
@@ -127,7 +180,13 @@ func (b *CommandBus) Consume() error {
 			}
 		}
 
-		_ = msg.Ack(false) // Acknowledge message
+		log.Printf("Command handled: %s", envelope.CommandType)
+		err = msg.Ack(false) // Acknowledge message
+		if err != nil {
+			log.Printf("Failed to acknowledge message: %v", err)
+		} else {
+			log.Printf("Message acknowledged: %s", msg.Body)
+		}
 	}
 
 	return nil

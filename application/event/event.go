@@ -48,22 +48,22 @@ type BaseEvent struct {
 	OccurredOn  time.Time `json:"occurred_on"`
 }
 
-func NewBaseEvent(aggregateID string) BaseEvent {
-	return BaseEvent{
+func NewBaseEvent(aggregateID string) *BaseEvent {
+	return &BaseEvent{
 		EventID:     uuid.New().String(),
 		AggregateID: aggregateID,
 		OccurredOn:  time.Now(),
 	}
 }
 
-func (b BaseEvent) ID() string {
+func (b *BaseEvent) ID() string {
 	return b.EventID
 }
 
-func (b BaseEvent) GetOccurredOn() time.Time {
+func (b *BaseEvent) GetOccurredOn() time.Time {
 	return b.OccurredOn
 }
 
-func (b BaseEvent) GetAggregateID() string {
+func (b *BaseEvent) GetAggregateID() string {
 	return b.AggregateID
 }

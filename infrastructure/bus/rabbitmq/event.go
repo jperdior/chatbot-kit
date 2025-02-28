@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"reflect"
 
 	"github.com/jperdior/chatbot-kit/application/event"
 	"github.com/streadway/amqp"
@@ -17,6 +18,12 @@ type EventBus struct {
 	exchange string
 	queues   []string
 	handlers map[event.Type][]event.Handler
+	types    map[event.Type]reflect.Type
+}
+
+// RegisterEventType at startup
+func (b *EventBus) RegisterEventType(eventType event.Type, eventStruct interface{}) {
+	b.types[eventType] = reflect.TypeOf(eventStruct)
 }
 
 // NewEventBus initializes a new RabbitMQ-based EventBus.
@@ -52,6 +59,7 @@ func NewEventBus(amqpURL, exchange string) (*EventBus, error) {
 		channel:  channel,
 		exchange: exchange,
 		handlers: make(map[event.Type][]event.Handler),
+		types:    make(map[event.Type]reflect.Type),
 	}, nil
 }
 
@@ -65,7 +73,6 @@ func (b *EventBus) Publish(ctx context.Context, events []event.Event) error {
 		return errors.New("RabbitMQ connection is not open")
 	}
 	for _, evt := range events {
-		log.Printf("Event: %+v\n", evt)
 		marshalledEvent, err := json.Marshal(evt)
 		if err != nil {
 			return err
@@ -74,7 +81,6 @@ func (b *EventBus) Publish(ctx context.Context, events []event.Event) error {
 			EventType: evt.Type(),
 			Data:      marshalledEvent,
 		}
-		log.Printf("Envelope: %+v\n", envelope)
 		data, err := json.Marshal(envelope)
 		if err != nil {
 			return err
@@ -123,6 +129,7 @@ func (b *EventBus) BindQueue(queue, routingKey string) error {
 
 // Consume listens for messages from the specified queue and dispatches them.
 func (b *EventBus) Consume(queue string) error {
+	log.Printf("Consuming from queue %s\n", queue)
 	msgs, err := b.channel.Consume(
 		queue,
 		"",    // Consumer name
@@ -136,8 +143,9 @@ func (b *EventBus) Consume(queue string) error {
 		log.Printf("Failed to start consuming from queue %s: %v", queue, err)
 		return err
 	}
-
+	log.Printf("Consumer successfully started on queue: %s", queue)
 	for msg := range msgs { // Blocking loop, processes messages one by one
+		log.Printf("Received message: %s", msg.Body)
 		var envelope event.EventEnvelope
 		if err := json.Unmarshal(msg.Body, &envelope); err != nil {
 			log.Printf("Failed to decode event envelope from queue %s: %v", queue, err)
@@ -145,11 +153,26 @@ func (b *EventBus) Consume(queue string) error {
 			continue
 		}
 
-		// Convert RawMessage to the actual event
-		var evt event.Event
-		if err := json.Unmarshal(envelope.Data, &evt); err != nil {
-			log.Printf("Failed to deserialize event of type %s: %v", envelope.EventType, err)
-			_ = msg.Nack(false, false) // Reject the message without requeueing
+		eventType, found := b.types[envelope.EventType]
+		if !found {
+			log.Printf("Unknown event type: %s", envelope.EventType)
+			_ = msg.Nack(false, false)
+			continue
+		}
+
+		evtValue := reflect.New(eventType).Interface()
+		// Unmarshal into the correct event type
+		if err := json.Unmarshal(envelope.Data, evtValue); err != nil {
+			log.Printf("Failed to deserialize event: %v", err)
+			_ = msg.Nack(false, false)
+			continue
+		}
+
+		// Cast to event.Event interface
+		evt, ok := evtValue.(event.Event)
+		if !ok {
+			log.Printf("Invalid event type: %T", evtValue)
+			_ = msg.Nack(false, false)
 			continue
 		}
 
@@ -169,11 +192,13 @@ func (b *EventBus) Consume(queue string) error {
 				continue
 			}
 		}
-
+		log.Printf("Event %s processed", envelope.EventType)
 		// Acknowledge the message after processing all handlers
 		err = msg.Ack(false)
 		if err != nil {
 			log.Printf("Failed to acknowledge message from queue %s: %v", queue, err)
+		} else {
+			log.Printf("Message from queue %s acknowledged", queue)
 		}
 	}
 

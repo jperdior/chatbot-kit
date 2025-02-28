@@ -1,6 +1,9 @@
 package command
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 // Bus defines the expected behaviour from a command bus.
 type Bus interface {
@@ -18,6 +21,11 @@ type Bus interface {
 
 // Type represents an application command type.
 type Type string
+
+type CommandEnvelope struct {
+	CommandType Type            `json:"type"`
+	Data        json.RawMessage `json:"data"`
+}
 
 // Command represents an application command.
 type Command interface {
