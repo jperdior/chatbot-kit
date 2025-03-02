@@ -8,15 +8,15 @@ type UserID struct {
 	*domain.UUIDValueObject
 }
 
-func NewUserID(value string) (UserID, error) {
+func NewUserID(value string) (*UserID, error) {
 	uid, err := domain.NewUuidValueObject(value)
 	if err != nil {
-		return UserID{}, err
+		return &UserID{}, err
 	}
-	return UserID{UUIDValueObject: uid}, nil
+	return &UserID{UUIDValueObject: uid}, nil
 }
 
-func NewRandomUserID() UserID {
+func NewRandomUserID() *UserID {
 	uid := domain.NewRandomUUIDValueObject()
-	return UserID{UUIDValueObject: uid}
+	return &UserID{UUIDValueObject: uid}
 }
