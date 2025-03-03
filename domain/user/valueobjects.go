@@ -17,7 +17,7 @@ func NewUserID(value string) (*UserID, error) {
 	return &UserID{UUIDValueObject: uid}, nil
 }
 
-func FromContext(ctx context.Context) (*UserID, error) {
+func UserIDFromContext(ctx context.Context) (*UserID, error) {
 	userID := ctx.Value("ID").(string)
 	uid, err := domain.NewUuidValueObject(userID)
 	if err != nil {
