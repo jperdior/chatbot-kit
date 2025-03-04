@@ -185,7 +185,7 @@ func (b *CommandBus) Consume() error {
 		if err != nil {
 			log.Printf("Failed to acknowledge message: %v", err)
 		} else {
-			log.Printf("Message acknowledged: %s", msg.Body)
+			log.Printf("Message acknowledged")
 		}
 	}
 
