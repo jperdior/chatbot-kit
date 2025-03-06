@@ -3,6 +3,8 @@ package auth
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jperdior/chatbot-kit/application/auth"
+	domain "github.com/jperdior/chatbot-kit/domain/user"
 	"net/http"
 )
 
@@ -15,41 +17,70 @@ func JWTMiddleware(secretKey string) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		// remove Bearer
-		tokenString = tokenString[7:]
+		// Remove "Bearer " prefix if present
+		if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+			tokenString = tokenString[7:]
+		}
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			// Validate the signing method (optional, but recommended)
+			// Validate the signing method
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrSignatureInvalid
 			}
-			// Return the secret key for validation
 			return []byte(secretKey), nil
 		})
 
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-			c.Abort()
-			return
-		}
-
-		// Check if the token is valid
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			// Set claims in context
-			c.Set("claims", claims)
-			c.Set("authToken", tokenString)
-		} else {
+		if err != nil || !token.Valid {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
 			return
 		}
 
-		claims := c.MustGet("claims").(jwt.MapClaims)
-		c.Set("ID", claims["ID"])
-		c.Set("roles", claims["roles"])
-		c.Set("name", claims["name"])
-		c.Set("email", claims["email"])
+		// Extract claims
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+			c.Abort()
+			return
+		}
 
+		// Identify token type
+		tokenType, _ := claims["token_type"].(string)
+		c.Set("tokenType", tokenType)
+		// If it's a user token, extract user-specific claims
+		if tokenType == "user" {
+			userID, err := domain.NewUserID(claims["ID"].(string))
+			if err != nil {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+				c.Abort()
+				return
+			}
+			roles, ok := claims["roles"].([]string)
+			if !ok {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user roles"})
+				c.Abort()
+				return
+			}
+			userSecurityContext := auth.NewUserSecurityContext(
+				userID,
+				claims["email"].(string),
+				roles,
+			)
+			c.Set("securityContext", userSecurityContext)
+		} else if tokenType == "client" {
+			clientSecurityContext := auth.NewClientSecurityContext(
+				claims["client_id"].(string),
+				claims["client_name"].(string),
+			)
+			c.Set("securityContext", clientSecurityContext)
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unknown token type"})
+			c.Abort()
+			return
+		}
+
+		c.Set("claims", claims)
+		c.Set("authToken", tokenString)
 		c.Next()
 	}
 }
