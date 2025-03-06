@@ -55,11 +55,22 @@ func JWTMiddleware(secretKey string) gin.HandlerFunc {
 				c.Abort()
 				return
 			}
-			roles, ok := claims["roles"].([]string)
+			rolesInterface, ok := claims["roles"].([]interface{})
 			if !ok {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user roles"})
 				c.Abort()
 				return
+			}
+
+			roles := make([]string, len(rolesInterface))
+			for i, v := range rolesInterface {
+				role, ok := v.(string)
+				if !ok {
+					c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user role type"})
+					c.Abort()
+					return
+				}
+				roles[i] = role
 			}
 			userSecurityContext := auth.NewUserSecurityContext(
 				userID,
