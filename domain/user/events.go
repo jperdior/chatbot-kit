@@ -1,4 +1,4 @@
-package domain
+package user
 
 import (
 	"github.com/jperdior/chatbot-kit/application/event"

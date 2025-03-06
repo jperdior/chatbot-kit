@@ -3,7 +3,6 @@ package auth
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	domain "github.com/jperdior/chatbot-kit/domain/user"
 	"net/http"
 )
 
@@ -48,12 +47,6 @@ func JWTMiddleware(secretKey string) gin.HandlerFunc {
 		c.Set("tokenType", tokenType)
 		// If it's a user token, extract user-specific claims
 		if tokenType == "user" {
-			userID, err := domain.NewUserID(claims["ID"].(string))
-			if err != nil {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
-				c.Abort()
-				return
-			}
 			roles, ok := claims["roles"].([]string)
 			if !ok {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user roles"})
@@ -61,7 +54,7 @@ func JWTMiddleware(secretKey string) gin.HandlerFunc {
 				return
 			}
 			userSecurityContext := NewUserSecurityContext(
-				userID,
+				claims["ID"].(string),
 				claims["email"].(string),
 				roles,
 			)

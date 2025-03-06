@@ -1,18 +1,17 @@
 package auth
 
 import (
-	"context"
 	domain "github.com/jperdior/chatbot-kit/domain/user"
 )
 
-type TokenType string
+type SecurityContextType string
 
 type SecurityContext interface {
-	Type() TokenType
+	Type() SecurityContextType
 	GetIdentifier() string
 }
 
-const UserSecurityContextType TokenType = "user"
+const UserSecurityContextType SecurityContextType = "user"
 
 type UserSecurityContext struct {
 	ID    *domain.UserID
@@ -24,7 +23,7 @@ func (t *UserSecurityContext) GetIdentifier() string {
 	return t.ID.String()
 }
 
-func (t *UserSecurityContext) Type() TokenType {
+func (t *UserSecurityContext) Type() SecurityContextType {
 	return UserSecurityContextType
 }
 
@@ -36,7 +35,7 @@ func NewUserSecurityContext(id *domain.UserID, email string, roles []string) *Us
 	}
 }
 
-const ClientSecurityContextType TokenType = "client"
+const ClientSecurityContextType SecurityContextType = "client"
 
 type ClientSecurityContext struct {
 	ClientID   string
@@ -47,7 +46,7 @@ func (t *ClientSecurityContext) GetIdentifier() string {
 	return t.ClientID
 }
 
-func (t *ClientSecurityContext) Type() TokenType {
+func (t *ClientSecurityContext) Type() SecurityContextType {
 	return ClientSecurityContextType
 }
 
@@ -56,12 +55,4 @@ func NewClientSecurityContext(clientID, clientName string) *ClientSecurityContex
 		ClientID:   clientID,
 		ClientName: clientName,
 	}
-}
-
-func GetSecurityContextFromContext(ctx context.Context) SecurityContext {
-	securityContext, ok := ctx.Value("securityContext").(SecurityContext)
-	if !ok {
-		return nil
-	}
-	return securityContext
 }
