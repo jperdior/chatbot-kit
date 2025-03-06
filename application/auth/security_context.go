@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	domain "github.com/jperdior/chatbot-kit/domain/user"
 )
 
@@ -55,4 +56,12 @@ func NewClientSecurityContext(clientID, clientName string) *ClientSecurityContex
 		ClientID:   clientID,
 		ClientName: clientName,
 	}
+}
+
+func GetSecurityContextFromContext(ctx context.Context) SecurityContext {
+	securityContext, ok := ctx.Value("securityContext").(SecurityContext)
+	if !ok {
+		return nil
+	}
+	return securityContext
 }
