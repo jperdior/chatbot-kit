@@ -23,6 +23,12 @@ func (b *CommandBus) RegisterCommandType(commandType command.Type, commandStruct
 	b.types[commandType] = reflect.TypeOf(commandStruct)
 }
 
+// RegisterCommand registers a command type and its handler.
+func (b *CommandBus) RegisterCommand(commandType command.Type, commandStruct interface{}, handler command.Handler) {
+	b.RegisterCommandType(commandType, commandStruct)
+	b.Register(commandType, handler)
+}
+
 // NewCommandBus initializes a new RabbitMQ-based CommandBus.
 func NewCommandBus(amqpURL, exchange, queue string) (*CommandBus, error) {
 	conn, err := amqp.Dial(amqpURL)
