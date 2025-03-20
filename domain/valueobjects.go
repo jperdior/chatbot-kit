@@ -124,3 +124,11 @@ func NewDateRangeFromStrings(start string, end string) (*DateRangeValueObject, e
 	}
 	return NewDateRangeValueObject(startTime, endTime)
 }
+
+func (dateRangeValueObject *DateRangeValueObject) Start() time.Time {
+	return dateRangeValueObject.start
+}
+
+func (dateRangeValueObject *DateRangeValueObject) End() time.Time {
+	return dateRangeValueObject.end
+}
