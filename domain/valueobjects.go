@@ -2,6 +2,7 @@ package domain
 
 import (
 	"regexp"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -98,4 +99,28 @@ func NewPageSizeValueObject(value int) (PageSizeValueObject, error) {
 
 func (pageSizeValueObject *PageSizeValueObject) Value() int {
 	return int(*pageSizeValueObject)
+}
+
+type DateRangeValueObject struct {
+	start time.Time
+	end   time.Time
+}
+
+func NewDateRangeValueObject(start time.Time, end time.Time) (*DateRangeValueObject, error) {
+	if start.After(end) {
+		return nil, NewDomainError("start date must be before end date", "date_range.invalid")
+	}
+	return &DateRangeValueObject{start: start, end: end}, nil
+}
+
+func NewDateRangeFromStrings(start string, end string) (*DateRangeValueObject, error) {
+	startTime, err := time.Parse(time.RFC3339, start)
+	if err != nil {
+		return nil, NewDomainError("invalid start date", "date.invalid")
+	}
+	endTime, err := time.Parse(time.RFC3339, end)
+	if err != nil {
+		return nil, NewDomainError("invalid end date", "date.invalid")
+	}
+	return NewDateRangeValueObject(startTime, endTime)
 }
