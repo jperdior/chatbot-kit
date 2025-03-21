@@ -9,7 +9,7 @@ import (
 
 // EmailValueObject represents a value object for emails
 type EmailValueObject struct {
-	value string
+	Value string
 }
 
 func NewEmailValueObject(value string) (*EmailValueObject, error) {
@@ -18,11 +18,11 @@ func NewEmailValueObject(value string) (*EmailValueObject, error) {
 	if !re.MatchString(value) {
 		return nil, NewDomainError("invalid email", "email.invalid")
 	}
-	return &EmailValueObject{value: value}, nil
+	return &EmailValueObject{Value: value}, nil
 }
 
-func (emailValueObject *EmailValueObject) Value() string {
-	return emailValueObject.value
+func (emailValueObject *EmailValueObject) GetValue() string {
+	return emailValueObject.Value
 }
 
 type UUIDValueObjectInterface interface {
@@ -102,15 +102,15 @@ func (pageSizeValueObject *PageSizeValueObject) Value() int {
 }
 
 type DateRangeValueObject struct {
-	start time.Time
-	end   time.Time
+	Start time.Time
+	End   time.Time
 }
 
 func NewDateRangeValueObject(start time.Time, end time.Time) (*DateRangeValueObject, error) {
 	if start.After(end) {
 		return nil, NewDomainError("start date must be before end date", "date_range.invalid")
 	}
-	return &DateRangeValueObject{start: start, end: end}, nil
+	return &DateRangeValueObject{Start: start, End: end}, nil
 }
 
 func NewDateRangeFromStrings(start string, end string) (*DateRangeValueObject, error) {
@@ -125,10 +125,10 @@ func NewDateRangeFromStrings(start string, end string) (*DateRangeValueObject, e
 	return NewDateRangeValueObject(startTime, endTime)
 }
 
-func (dateRangeValueObject *DateRangeValueObject) Start() time.Time {
-	return dateRangeValueObject.start
+func (dateRangeValueObject *DateRangeValueObject) GetStart() time.Time {
+	return dateRangeValueObject.Start
 }
 
-func (dateRangeValueObject *DateRangeValueObject) End() time.Time {
-	return dateRangeValueObject.end
+func (dateRangeValueObject *DateRangeValueObject) GetEnd() time.Time {
+	return dateRangeValueObject.End
 }
