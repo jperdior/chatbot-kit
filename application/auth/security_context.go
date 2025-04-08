@@ -9,6 +9,8 @@ type SecurityContextType string
 type SecurityContext interface {
 	Type() SecurityContextType
 	GetIdentifier() string
+	HasRole(role string) bool
+	HasRoles(roles []string) bool
 }
 
 const UserSecurityContextType SecurityContextType = "user"
@@ -25,6 +27,24 @@ func (t *UserSecurityContext) GetIdentifier() string {
 
 func (t *UserSecurityContext) Type() SecurityContextType {
 	return UserSecurityContextType
+}
+
+func (t *UserSecurityContext) HasRole(role string) bool {
+	for _, r := range t.Roles {
+		if r == role {
+			return true
+		}
+	}
+	return false
+}
+
+func (t *UserSecurityContext) HasRoles(roles []string) bool {
+	for _, role := range roles {
+		if !t.HasRole(role) {
+			return false
+		}
+	}
+	return true
 }
 
 func NewUserSecurityContext(id *domain.UserID, email string, roles []string) *UserSecurityContext {
