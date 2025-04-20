@@ -26,16 +26,23 @@ func ApplyCriteria(query *gorm.DB, criteria domain.CriteriaInterface) (*gorm.DB,
 
 func ApplyCriteriaWithCount(query *gorm.DB, criteria domain.CriteriaInterface) (*gorm.DB, int64, error) {
 	var total int64
+
+	// Clone the query for counting total records
 	countQuery := query.Model(query.Statement.Model)
-	countQuery, err := ApplyCriteria(countQuery, criteria)
-	if err != nil {
-		return nil, 0, err
+
+	// Apply only filters to count query, not pagination or sorting
+	for _, filter := range criteria.Filters() {
+		value := filter.Value()
+		countQuery = countQuery.Where(filter.Name()+" "+filter.Operation()+" ?", value)
 	}
+
+	// Get total count without pagination
 	if err := countQuery.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	query, err = ApplyCriteria(query, criteria)
+	// Apply all criteria including pagination to the data query
+	query, err := ApplyCriteria(query, criteria)
 	if err != nil {
 		return nil, 0, err
 	}
