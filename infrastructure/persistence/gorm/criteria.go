@@ -23,3 +23,22 @@ func ApplyCriteria(query *gorm.DB, criteria domain.CriteriaInterface) (*gorm.DB,
 
 	return query, nil
 }
+
+func ApplyCriteriaWithCount(query *gorm.DB, criteria domain.CriteriaInterface) (*gorm.DB, int64, error) {
+	var total int64
+	countQuery := query.Model(query.Statement.Model)
+	countQuery, err := ApplyCriteria(countQuery, criteria)
+	if err != nil {
+		return nil, 0, err
+	}
+	if err := countQuery.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	query, err = ApplyCriteria(query, criteria)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return query, total, nil
+}
