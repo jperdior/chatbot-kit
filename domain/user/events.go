@@ -7,25 +7,19 @@ import (
 const UserRegisteredType event.Type = "user.user_registered"
 
 type UserRegisteredEvent struct {
-	*event.BaseEvent
-	email string
-	roles []string
+	*event.BaseEvent `json:",inline"`
+	Email            string   `json:"email"`
+	Name             string   `json:"name"`
+	Roles            []string `json:"roles"`
 }
 
-func NewUserRegisteredEvent(id string, email string, roles []string) *UserRegisteredEvent {
+func NewUserRegisteredEvent(id, email, name string, roles []string) *UserRegisteredEvent {
 	return &UserRegisteredEvent{
 		BaseEvent: event.NewBaseEvent(id),
-		email:     email,
-		roles:     roles,
+		Email:     email,
+		Name:      name,
+		Roles:     roles,
 	}
-}
-
-func (e *UserRegisteredEvent) Email() string {
-	return e.email
-}
-
-func (e *UserRegisteredEvent) Roles() []string {
-	return e.roles
 }
 
 func (e *UserRegisteredEvent) Type() event.Type {
